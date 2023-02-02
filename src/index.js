@@ -3,6 +3,7 @@ import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 import Notiflix from 'notiflix';
 import cardTpl from './templates/photoCard.hbs';
+import axios from 'axios';
 //------------------Імпорт пакетів/стилі/шаблонів
 
 //------------------Змінні
@@ -91,8 +92,12 @@ function onLoadMore(e) {
 function isResponseOk(response) {
   if (response.status !== 200) {
     throw new Error(response.status);
+  } else if (response.data.total === 0) {
+    showError();
+    return;
   }
-  return response.json();
+  searchResultQuantity = response.data.totalHits;
+  return response.data;
 }
 function clearGallery() {
   refs.gallery.innerHTML = '';
@@ -108,74 +113,27 @@ async function renderFetch() {
   }
   return promise;
 }
-function checkResponse(data) {
-  if (data.total === 0) {
-    showError();
-    return;
-  }
-  searchResultQuantity = data.totalHits;
-  return data;
-}
 
-function createURL(query) {
-  const BASIC_URL = 'https://pixabay.com/api/?key=';
-  const API_KEY = '33277112-6a7c7acf3741d1ff176c90aa7';
-  const IMAGE_TYPE = 'image_type=photo';
-  const IMAGE_ORIENTATION = 'orientation=horizontal';
-  const SAFE_SEARCH = 'safesearch=true';
-  const PER_PAGE = 'per_page=40';
-  let page = `page=${searchPage}`;
-
-  const SEARCH_OPTIONS = [
-    IMAGE_TYPE,
-    IMAGE_ORIENTATION,
-    SAFE_SEARCH,
-    PER_PAGE,
-    page,
-  ];
-  const URL = `${BASIC_URL}${API_KEY}&q=${query}&${SEARCH_OPTIONS.join('&')}`;
-  return URL;
-}
 async function getPromise() {
   try {
-    const response = await fetch(createURL(query));
-    const responseJson = await isResponseOk(response);
-    const responseParsed = await checkResponse(responseJson);
+    const response = await axios.get('https://pixabay.com/api/?', {
+      params: {
+        key: '33277112-6a7c7acf3741d1ff176c90aa7',
+        q: query,
+        image_type: 'photo',
+        orientation: 'horizontal',
+        safesearch: true,
+        per_page: 40,
+        page: searchPage,
+      },
+    });
+    const responseParsed = await isResponseOk(response);
     return responseParsed;
   } catch {
     console.log(error);
     showNotify();
   }
 }
-
-// function getPromise(query) {
-//   return fetch(createURL())
-//     .then(response => {
-//       isResponseOk(response);
-//       return response.json();
-//     })
-//     .then(data => {
-//       if (data.total === 0) {
-//         showError();
-//         return;
-//       }
-//       searchResultQuantity = data.totalHits;
-//       return data;
-//     })
-//     .catch(error => {
-//       //console.log(error);
-//       showNotify();
-//     });
-// }
-
-// // const { height: cardHeight } = document
-// //   .querySelector('.gallery')
-// //   .firstElementChild.getBoundingClientRect();
-
-// // window.scrollBy({
-// //   top: cardHeight * 2,
-// //   behavior: 'smooth',
-// // });
 
 refs.searchBtn.addEventListener('click', onSearch);
 refs.loadMoreBtn.addEventListener('click', onLoadMore);
