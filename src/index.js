@@ -13,6 +13,7 @@ const refs = {
 let searchPage = 1;
 let canSearchMore = true;
 let totalHits = 0;
+let query = '';
 //------------------Змінні
 
 //------------------Галерея
