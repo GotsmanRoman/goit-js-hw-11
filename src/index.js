@@ -1,7 +1,9 @@
+//------------------Імпорт пакетів/стилі/шаблонів
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 import Notiflix from 'notiflix';
 import cardTpl from './templates/photoCard.hbs';
+//------------------Імпорт пакетів/стилі/шаблонів
 
 //------------------Змінні
 const refs = {
@@ -11,14 +13,14 @@ const refs = {
   loadMoreBtn: document.querySelector('.load-more'),
 };
 let searchPage = 1;
-let canSearchMore = true;
-let totalHits = 0;
+let searchResultQuantity = 0;
 let query = '';
+let gallery;
 //------------------Змінні
 
-//------------------Галерея
+//------------------Ініціалізація Галереї
 function callSimpleLightBox() {
-  let gallery = new SimpleLightbox('.gallery a', {
+  gallery = new SimpleLightbox('.gallery a', {
     caption: 'true',
     captionType: 'attr',
     captionsData: 'alt',
@@ -30,7 +32,7 @@ function callSimpleLightBox() {
   });
 
   gallery.on('error.simplelightbox', function (e) {
-    console.log(e); // Some usefull information
+    console.log('Помилка загрузки галереї'); // Some usefull information
   });
 }
 //------------------Галерея
@@ -67,48 +69,55 @@ function showSuccess(totalHits, valueToFade = '2000') {
 
 async function onSearch(e) {
   e.preventDefault();
-  clearGallery();
+  refs.loadMoreBtn.classList.add('is-hidden');
   searchPage = 1;
-
   query = refs.input.value;
+  clearGallery();
 
-  await renderFetch(query);
-  console.log(totalHits);
-  refs.loadMoreBtn.classList.remove('is-hidden');
+  try {
+    if (await renderFetch(query)) {
+      showSuccess(searchResultQuantity);
+      refs.loadMoreBtn.classList.remove('is-hidden');
+    }
+  } catch {
+    showError();
+  }
 }
 function onLoadMore(e) {
   e.preventDefault();
-  gallery.refresh();
-
-  // if (allowToSearch()) return;
-
-  // console.log(searchPage);
-  renderFetch(query);
   searchPage++;
+  renderFetch();
 }
-// function allowToSearch() {
-//   if (!canSearchMore) {
-//     showNotify();
-//     return;
-//   }
-//   if (searchPage * 40 > 500) canSearchMore = false;
-// }
 function isResponseOk(response) {
   if (response.status !== 200) {
     throw new Error(response.status);
   }
+  return response.json();
 }
 function clearGallery() {
   refs.gallery.innerHTML = '';
 }
 
-async function renderFetch(query) {
-  const promise = await getPromise(query);
+async function renderFetch() {
+  const promise = await getPromise();
   refs.gallery.insertAdjacentHTML('beforeend', cardTpl(promise));
-  callSimpleLightBox();
+  if (!gallery) {
+    callSimpleLightBox();
+  } else {
+    gallery.refresh();
+  }
+  return promise;
+}
+function checkResponse(data) {
+  if (data.total === 0) {
+    showError();
+    return;
+  }
+  searchResultQuantity = data.totalHits;
+  return data;
 }
 
-function getPromise(query) {
+function createURL(query) {
   const BASIC_URL = 'https://pixabay.com/api/?key=';
   const API_KEY = '33277112-6a7c7acf3741d1ff176c90aa7';
   const IMAGE_TYPE = 'image_type=photo';
@@ -124,29 +133,40 @@ function getPromise(query) {
     PER_PAGE,
     page,
   ];
-
   const URL = `${BASIC_URL}${API_KEY}&q=${query}&${SEARCH_OPTIONS.join('&')}`;
-  console.log(URL);
-
-  return fetch(URL)
-    .then(response => {
-      isResponseOk(response);
-      return response.json();
-    })
-    .then(data => {
-      if (data.total === 0) {
-        showError();
-        return;
-      }
-      //console.log(data);
-      totalHits = data.totalHits;
-      return data;
-    })
-    .catch(error => {
-      //console.log(error);
-      showNotify();
-    });
+  return URL;
 }
+async function getPromise() {
+  try {
+    const response = await fetch(createURL(query));
+    const responseJson = await isResponseOk(response);
+    const responseParsed = await checkResponse(responseJson);
+    return responseParsed;
+  } catch {
+    console.log(error);
+    showNotify();
+  }
+}
+
+// function getPromise(query) {
+//   return fetch(createURL())
+//     .then(response => {
+//       isResponseOk(response);
+//       return response.json();
+//     })
+//     .then(data => {
+//       if (data.total === 0) {
+//         showError();
+//         return;
+//       }
+//       searchResultQuantity = data.totalHits;
+//       return data;
+//     })
+//     .catch(error => {
+//       //console.log(error);
+//       showNotify();
+//     });
+// }
 
 // // const { height: cardHeight } = document
 // //   .querySelector('.gallery')
