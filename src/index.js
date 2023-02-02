@@ -78,6 +78,7 @@ async function onSearch(e) {
 }
 function onLoadMore(e) {
   e.preventDefault();
+  gallery.refresh();
 
   // if (allowToSearch()) return;
 
