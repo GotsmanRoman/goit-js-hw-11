@@ -41,12 +41,16 @@ p {
   padding-left: 10px;
 }
 .search-form__btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   height: 50px;
   width: 50px;
   margin-left: -50px;
   border: none;
   border-top-right-radius: 5px;
   border-bottom-right-radius: 5px;
+  cursor: pointer;
 }
 .load-more {
   display: block;
