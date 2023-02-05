@@ -11,7 +11,7 @@ const refs = {
   input: document.querySelector('.search-form__input'),
   searchBtn: document.querySelector('.search-form__btn'),
   gallery: document.querySelector('.gallery'),
-  loadMoreBtn: document.querySelector('.load-more'),
+  // loadMoreBtn: document.querySelector('.load-more'),
 };
 let searchPage = 1;
 let searchResultQuantity = 0;
@@ -68,9 +68,20 @@ function showSuccess(totalHits, valueToFade = '2000') {
 }
 //------------------Cповіщення
 
+function smoothScroll() {
+  const { height: cardHeight } = document
+    .querySelector('.gallery')
+    .firstElementChild.getBoundingClientRect();
+
+  window.scrollBy({
+    top: cardHeight * 2,
+    behavior: 'smooth',
+  });
+}
+
 async function onSearch(e) {
   e.preventDefault();
-  refs.loadMoreBtn.classList.add('is-hidden');
+  //refs.loadMoreBtn.classList.add('is-hidden');
   searchPage = 1;
   query = refs.input.value;
   clearGallery();
@@ -78,15 +89,16 @@ async function onSearch(e) {
   try {
     if (await renderFetch(query)) {
       showSuccess(searchResultQuantity);
-      refs.loadMoreBtn.classList.remove('is-hidden');
+      //refs.loadMoreBtn.classList.remove('is-hidden');
     }
   } catch {
     showError();
   }
 }
-function onLoadMore(e) {
-  e.preventDefault();
+function onLoadMore() {
+  //e.preventDefault();
   searchPage++;
+
   renderFetch();
 }
 function isResponseOk(response) {
@@ -110,6 +122,7 @@ async function renderFetch() {
     callSimpleLightBox();
   } else {
     gallery.refresh();
+    smoothScroll();
   }
   return promise;
 }
@@ -136,4 +149,12 @@ async function getPromise() {
 }
 
 refs.searchBtn.addEventListener('click', onSearch);
-refs.loadMoreBtn.addEventListener('click', onLoadMore);
+//refs.loadMoreBtn.addEventListener('click', onLoadMore);
+
+window.addEventListener('scroll', () => {
+  const { clientHeight, scrollHeight, scrollTop } = document.documentElement;
+
+  if (clientHeight + scrollTop + 1 >= scrollHeight) {
+    onLoadMore();
+  }
+});
